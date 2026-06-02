@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>甲亢藥物追蹤器</title>
+<meta name="theme-color" content="#7c3aed">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="食藥提醒">
+<link rel="manifest" href="manifest.json">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'PingFang HK', sans-serif; background: #0f0f1a; color: #fff; min-height: 100vh; padding-bottom: 40px; }
+.header { background: linear-gradient(135deg, #7c3aed, #a855f7); padding: 32px 20px 20px; text-align: center; }
+.header h1 { font-size: 22px; font-weight: 800; margin-top: 6px; }
+.header p { color: #e9d5ff; font-size: 12px; margin-top: 4px; }
+.container { max-width: 420px; margin: 0 auto; padding: 0 16px; }
+.card { background: #1f2937; border-radius: 20px; padding: 20px; margin-top: 14px; }
+.status-card { text-align: center; border: 1.5px solid transparent; }
+.status-text { font-size: 20px; font-weight: 800; margin: 10px 0; }
+.date-text { font-size: 12px; color: #6b7280; }
+.btn-main { width: 100%; border: none; border-radius: 14px; padding: 16px 0; font-size: 18px; font-weight: 800; cursor: pointer; color: #fff; margin-top: 16px; background: linear-gradient(135deg, #7c3aed, #a855f7); transition: transform 0.15s; }
+.btn-main:active { transform: scale(0.95); }
+.btn-secondary { background: none; border: 1px solid #374151; border-radius: 8px; padding: 5px 14px; font-size: 12px; color: #6b7280; cursor: pointer; margin-top: 8px; }
+.btn-outline { width: 100%; background: #7c3aed22; color: #a78bfa; border: 1px solid #7c3aed; border-radius: 10px; padding: 12px 0; font-size: 14px; font-weight: 700; cursor: pointer; }
+.btn-grey { width: 100%; background: #1f2937; color: #6b7280; border: 1px solid #374151; border-radius: 14px; padding: 12px 0; font-size: 14px; cursor: pointer; margin-top: 12px; }
+.stats { display: flex; gap: 12px; margin-top: 14px; }
+.stat-box { flex: 1; background: #1f2937; border-radius: 16px; padding: 16px; text-align: center; }
+.stat-num { font-size: 30px; font-weight: 800; color: #a78bfa; }
+.stat-label { font-size: 11px; color: #6b7280; margin-top: 2px; }
+.calendar-scroll { overflow-x: auto; }
+.calendar-row { display: flex; gap: 5px; min-width: max-content; padding: 4px 0; }
+.cal-day { border-radius: 10px; padding: 7px 3px; text-align: center; min-width: 42px; border: 2px solid transparent; }
+.cal-day.today { border-color: #a78bfa; }
+.cal-wd { font-size: 9px; color: #6b7280; }
+.cal-date { font-size: 11px; color: #9ca3af; }
+.cal-icon { font-size: 15px; }
+.cal-today-label { font-size: 8px; color: #a78bfa; font-weight: 700; }
+.legend { display: flex; gap: 10px; margin-top: 10px; font-size: 11px; color: #4b5563; flex-wrap: wrap; }
+.card-title { font-weight: 700; font-size: 13px; color: #9ca3af; margin-bottom: 10px; }
+.next-day { color: #6b7280; font-size: 13px; margin-top: 10px; }
+.next-day span { color: #a78bfa; font-weight: 700; }
+.toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: #1f2937; color: #fff; border-radius: 12px; padding: 12px 22px; font-size: 14px; font-weight: 600; border: 1px solid #374151; z-index: 200; white-space: nowrap; opacity: 0; transition: opacity 0.3s; }
+.toast.show { opacity: 1; }
+#setup-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 24px; }
+#setup-screen h1 { font-size: 24px; font-weight: 800; text-align: center; margin: 12px 0 6px; }
+#setup-screen p { color: #6b7280; font-size: 14px; text-align: center; margin-bottom: 36px; }
+.form-group { width: 100%; max-width: 360px; }
+.form-label { display: block; color: #a78bfa; font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+.form-input { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid #374151; background: #1f2937; color: #fff; font-size: 16px; margin-bottom: 16px; }
+.notif-ok { color: #34d399; font-size: 13px; font-weight: 600; }
+.notif-denied { color: #f87171; font-size: 13px; }
+</style>
+</head>
+<body>
+<div id="setup-screen">
+  <div style="font-size:56px">💊</div>
+  <h1>甲亢藥物追蹤器</h1>
+  <p>隔日食藥提示 · 記錄管理</p>
+  <div class="form-group">
+    <label class="form-label">第一次食藥日期</label>
+    <input type="date" id="start-date-input" class="form-input">
+    <label class="form-label">每日提示時間</label>
+    <input type="time" id="notif-time-input" class="form-input" value="09:00">
+    <button class="btn-main" onclick="saveSetup()">開始使用 →</button>
+  </div>
+</div>
+<div id="main-screen" style="display:none">
+  <div class="header">
+    <div style="font-size:34px">💊</div>
+    <h1>甲亢藥物追蹤器</h1>
+    <p>隔日食藥提示 · 記錄管理</p>
+  </div>
+  <div class="container">
+    <div class="card status-card" id="status-card">
+      <div class="date-text" id="today-date"></div>
+      <div class="status-text" id="status-text"></div>
+      <div id="action-area"></div>
+    </div>
+    <div class="stats">
+      <div class="stat-box"><div class="stat-num" id="streak-num">0</div><div class="stat-label">連續準時食藥</div></div>
+      <div class="stat-box"><div class="stat-num" id="total-num">0</div><div class="stat-label">總共食咗次數</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📅 最近三週記錄</div>
+      <div class="calendar-scroll"><div class="calendar-row" id="calendar-row"></div></div>
+      <div class="legend"><span>✓ 食咗</span><span>✗ 漏食</span><span>💊 食藥日</span><span>— 休息日</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔔 定時提示</div>
+      <div id="notif-area"></div>
+      <p style="font-size:11px;color:#4b5563;margin-top:10px;line-height:1.7">食藥日會喺你設定嘅時間自動彈提示 💊</p>
+    </div>
+    <button class="btn-grey" onclick="showSetup()">⚙️ 更改設定</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const DAYS=['日','一','二','三','四','五','六'];
+function toDateStr(d){return d.toISOString().split('T')[0];}
+function today(){return toDateStr(new Date());}
+function isMedDay(s,c){return Math.floor((new Date(c)-new Date(s))/86400000)%2===0;}
+function load(){try{return JSON.parse(localStorage.getItem('med_pwa')||'null');}catch{return null;}}
+function save(d){try{localStorage.setItem('med_pwa',JSON.stringify(d));return true;}catch{return false;}}
+let appData=load();
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function saveSetup(){const sd=document.getElementById('start-date-input').value;const nt=document.getElementById('notif-time-input').value;if(!sd){showToast('請揀日期！');return;}const existing=appData?appData.takenDates:[];appData={startDate:sd,notifTime:nt,takenDates:existing};save(appData);showMain();showToast('✅ 設定已儲存！');}
+function showSetup(){document.getElementById('setup-screen').style.display='flex';document.getElementById('main-screen').style.display='none';if(appData){document.getElementById('start-date-input').value=appData.startDate;document.getElementById('notif-time-input').value=appData.notifTime||'09:00';}else{document.getElementById('start-date-input').value=today();}}
+function showMain(){document.getElementById('setup-screen').style.display='none';document.getElementById('main-screen').style.display='block';renderMain();}
+function renderMain(){if(!appData)return;const t=today();const medDay=isMedDay(appData.startDate,t);const taken=appData.takenDates.includes(t);document.getElementById('today-date').textContent=new Date().toLocaleDateString('zh-HK',{weekday:'long',month:'long',day:'numeric'});const card=document.getElementById('status-card');const statusEl=document.getElementById('status-text');const actionEl=document.getElementById('action-area');if(!medDay){card.style.background='#1a1040';card.style.borderColor='#a78bfa33';statusEl.style.color='#a78bfa';statusEl.textContent='💤 今日唔使食';let next=null;for(let i=1;i<=3;i++){const d=new Date();d.setDate(d.getDate()+i);if(isMedDay(appData.startDate,toDateStr(d))){next=toDateStr(d);break;}}actionEl.innerHTML=next?`<div class="next-day">下次食藥：<span>${next}</span></div>`:'';}else if(taken){card.style.background='#0d3b2e';card.style.borderColor='#34d39933';statusEl.style.color='#34d399';statusEl.textContent='✅ 今日食咗喇';actionEl.innerHTML=`<div style="font-size:32px;margin-top:8px">🎉</div><button class="btn-secondary" onclick="untake()">取消記錄</button>`;}else{card.style.background='#3b2400';card.style.borderColor='#fbbf2433';statusEl.style.color='#fbbf24';statusEl.textContent='⏰ 今日要食藥！';actionEl.innerHTML=`<button class="btn-main" onclick="markTaken()">✅ 我食咗喇！</button>`;}document.getElementById('total-num').textContent=appData.takenDates.length;document.getElementById('streak-num').textContent=calcStreak();renderCalendar();renderNotif();}
+function markTaken(){if(appData.takenDates.includes(today()))return;appData.takenDates.push(today());save(appData);showToast('🎉 已記錄！做得好！');renderMain();}
+function untake(){appData.takenDates=appData.takenDates.filter(d=>d!==today());save(appData);showToast('已取消今日記錄');renderMain();}
+function calcStreak(){let count=0;let d=new Date();d.setDate(d.getDate()-1);for(let i=0;i<60;i++){const ds=toDateStr(d);if(!isMedDay(appData.startDate,ds)){d.setDate(d.getDate()-1);continue;}if(!appData.takenDates.includes(ds))break;count++;d.setDate(d.getDate()-2);}return count;}
+function renderCalendar(){const row=document.getElementById('calendar-row');row.innerHTML='';const base=new Date();base.setDate(base.getDate()-7);for(let i=0;i<21;i++){const d=new Date(base);d.setDate(base.getDate()+i);const ds=toDateStr(d);const isToday=ds===today();const medDay=isMedDay(appData.startDate,ds);const taken=appData.takenDates.includes(ds);const isPast=d<new Date(today());let bg='#1a1a2e',icon='';if(!medDay){bg='#16213e';icon='—';}else if(taken){bg='#0d3b2e';icon='✓';}else if(isPast){bg='#3b0d0d';icon='✗';}else{bg='#3b3000';icon='💊';}const div=document.createElement('div');div.className='cal-day'+(isToday?' today':'');div.style.background=bg;div.innerHTML=`<div class="cal-wd">(${DAYS[d.getDay()]})</div><div class="cal-date">${d.getMonth()+1}/${d.getDate()}</div><div class="cal-icon">${icon}</div>${isToday?'<div class="cal-today-label">今日</div>':''}`;row.appendChild(div);}}
+function renderNotif(){const area=document.getElementById('notif-area');if(!('Notification'in window)){area.innerHTML='<div style="color:#6b7280;font-size:13px">此瀏覽器唔支援通知</div>';return;}if(Notification.permission==='granted'){const t=appData.notifTime||'09:00';area.innerHTML=`<div class="notif-ok">✅ 通知已開啟 — 食藥日 ${t} 會提示你</div>`;}else if(Notification.permission==='denied'){area.innerHTML=`<div class="notif-denied">❌ 通知被拒絕，請喺手機設定開啟</div>`;}else{area.innerHTML=`<button class="btn-outline" onclick="requestNotif()">🔔 開啟定時通知</button>`;}}
+async function requestNotif(){const perm=await Notification.requestPermission();if(perm==='granted'){showToast('✅ 通知已開啟！');scheduleNotification();}else{showToast('❌ 請喺設定開啟通知');}renderNotif();}
+function scheduleNotification(){if(!appData||Notification.permission!=='granted')return;if(!('serviceWorker'in navigator))return;navigator.serviceWorker.ready.then(reg=>{reg.active&&reg.active.postMessage({type:'SCHEDULE',startDate:appData.startDate,notifTime:appData.notifTime,takenDates:appData.takenDates});});}
+window.addEventListener('load',()=>{'serviceWorker'in navigator&&navigator.serviceWorker.register('sw.js').catch(()=>{});if(appData){showMain();}else{showSetup();document.getElementById('start-date-input').value=today();}});
+</script>
+</body>
+</html>

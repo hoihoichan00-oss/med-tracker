@@ -1,0 +1,16 @@
+{
+  "name": "甲亢藥物追蹤器",
+  "short_name": "食藥提醒",
+  "description": "隔日食藥提示追蹤器",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0f1a",
+  "theme_color": "#7c3aed",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
